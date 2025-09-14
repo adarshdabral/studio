@@ -51,13 +51,13 @@ export default function Header() {
         <nav className="flex items-center gap-6 text-sm">
           <Link
             href="/#events"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className="transition-colors hover:text-foreground/80 text-foreground/60 hidden sm:block"
           >
             Events
           </Link>
           <Link
             href="/events/create"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className="transition-colors hover:text-foreground/80 text-foreground/60 hidden md:block"
           >
             Create Event
           </Link>
@@ -67,13 +67,13 @@ export default function Header() {
             <>
               <Button asChild variant="ghost">
                 <Link href="/dashboard">
-                  <LayoutDashboard className="mr-2" />
-                  Dashboard
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
                 </Link>
               </Button>
               <Button onClick={handleLogout} variant="outline">
-                <LogOut className="mr-2" />
-                Logout
+                <LogOut className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             </>
           ) : (

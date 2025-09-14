@@ -28,7 +28,7 @@ export default function Home() {
     });
     
     return () => {
-      unsubscribe();
+      if (unsubscribe) unsubscribe();
     };
   }, []);
 
@@ -41,7 +41,7 @@ export default function Home() {
         <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-foreground/80">
           The heart of campus life. Discover, create, and join events that shape your university experience.
         </p>
-        <div className="mt-8 flex justify-center gap-4">
+        <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
           <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Link href="#events">
               Explore Events

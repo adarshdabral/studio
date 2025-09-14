@@ -48,7 +48,7 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { format } from "date-fns";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 
@@ -61,7 +61,7 @@ const formSchema = z.object({
   venue: z.string().min(3, "Venue must be at least 3 characters."),
   organizingCommittee: z
     .array(z.object({ email: z.string().email("Invalid email address.") }))
-    .min(0), // Can be zero now
+    .min(0),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -139,7 +139,7 @@ export function CreateEventForm() {
     }
   };
 
-  async function onSubmit(values: FormValues) {
+  const onSubmit = async (values: FormValues) => {
     if (!user) {
         toast({ variant: "destructive", title: "Not Authenticated", description: "You must be logged in to create an event." });
         return;
@@ -170,10 +170,11 @@ export function CreateEventForm() {
         router.push(`/events/${docRef.id}`);
     } catch (error: any) {
         setIsSubmitting(false);
+        console.error("Error creating event:", error);
         toast({
             variant: "destructive",
             title: "Error Creating Event",
-            description: error.message || "Failed to create event."
+            description: error.message || "Failed to create event. Check console for details."
         });
     }
   }
@@ -250,14 +251,14 @@ export function CreateEventForm() {
               <CardTitle>Organizing Committee</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
                 <Input
                   value={ocInput}
                   onChange={(e) => setOcInput(e.target.value)}
                   placeholder="Add member by email"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddOcMember(); } }}
                 />
-                <Button type="button" onClick={handleAddOcMember}>
+                <Button type="button" onClick={handleAddOcMember} className="w-full sm:w-auto">
                   <UserPlus className="mr-2 h-4 w-4" /> Add
                 </Button>
               </div>
@@ -273,7 +274,7 @@ export function CreateEventForm() {
                             key={field.id}
                             className="flex items-center justify-between p-2 bg-muted rounded-md"
                           >
-                            <span>{field.email}</span>
+                            <span className="truncate">{field.email}</span>
                             <Button
                               type="button"
                               variant="ghost"
@@ -293,21 +294,22 @@ export function CreateEventForm() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-between items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <Button
               type="button"
               variant="outline"
               onClick={handleSuggestTasks}
               disabled={isSuggesting || form.getValues().organizingCommittee.length === 0}
+              className="w-full sm:w-auto"
             >
               {isSuggesting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              AI-Powered Task Assigner
+              AI Task Assigner
             </Button>
-            <Button type="submit" size="lg" disabled={isSubmitting}>
+            <Button type="submit" size="lg" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Rocket className="mr-2 h-4 w-4" />}
               Launch Event
             </Button>

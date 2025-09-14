@@ -27,7 +27,6 @@ const eventFromDoc = (doc: any): Event => {
     } as Event;
 };
 
-
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -46,46 +45,36 @@ export default function DashboardPage() {
     setDataLoading(true);
     const eventsCollection = collection(db, "events");
 
-    // A single query to get all events relevant to the user
-    const userEventsQuery = query(eventsCollection, 
-        where("attendees", "array-contains-any", [user.email]),
-        // Note: Firestore does not support logical OR in a single query across different fields.
-        // We will fetch based on attendees and filter locally for host and OC roles.
-        // For a more scalable solution, one might denormalize data, but this is optimal for now.
-    );
-    
-    // We will have separate listeners for host and OC for real-time accuracy without complex client-side merging logic from a single "all events" listener
     const queries = [
         query(eventsCollection, where("attendees", "array-contains", user.email)),
         query(eventsCollection, where("hostId", "==", user.uid)),
         query(eventsCollection, where("organizingCommittee", "array-contains", user.email)),
     ];
 
-    let loadingStates = queries.length;
-    const loadedData: { [key: number]: Event[] } = {};
+    let queryCount = queries.length;
+    let initialLoadsFinished = 0;
+    const allEventsMap = new Map<string, Event>();
 
-    const unsubscribes = queries.map((q, index) => 
+    const unsubscribes = queries.map((q) => 
         onSnapshot(q, (snapshot) => {
-            loadedData[index] = snapshot.docs.map(doc => eventFromDoc(doc));
+            snapshot.docs.forEach(doc => {
+                allEventsMap.set(doc.id, eventFromDoc(doc));
+            });
             
-            // Decrement loading count only on the first snapshot for each query
-            if(loadingStates > 0) {
-                loadingStates--;
-                if (loadingStates === 0) {
+            if (initialLoadsFinished < queryCount) {
+                initialLoadsFinished++;
+                if (initialLoadsFinished === queryCount) {
                     setDataLoading(false);
                 }
             }
 
-            // Combine all data into a single state
-            const combinedEvents = Object.values(loadedData).flat();
-            const uniqueEvents = Array.from(new Map(combinedEvents.map(e => [e.id, e])).values());
-            setAllUserEvents(uniqueEvents);
+            setAllUserEvents(Array.from(allEventsMap.values()));
 
         }, (error) => {
             console.error("Error fetching events:", error);
-            if(loadingStates > 0) {
-                loadingStates--;
-                if (loadingStates === 0) {
+            if (initialLoadsFinished < queryCount) {
+                initialLoadsFinished++;
+                 if (initialLoadsFinished === queryCount) {
                     setDataLoading(false);
                 }
             }
@@ -102,12 +91,16 @@ export default function DashboardPage() {
     }
     const now = new Date();
     const isRegistered = (e: Event) => e.attendees.includes(user.email!);
+    const isHost = (e: Event) => e.hostId === user.uid;
+    const isOC = (e: Event) => e.organizingCommittee.includes(user.email!);
+
+    const uniqueEvents = Array.from(new Map(allUserEvents.map(e => [e.id, e])).values());
 
     return {
-        upcomingRegisteredEvents: allUserEvents.filter(e => isRegistered(e) && e.date >= now),
-        attendedEvents: allUserEvents.filter(e => isRegistered(e) && e.date < now),
-        hostedEvents: allUserEvents.filter(e => e.hostId === user.uid),
-        ocEvents: allUserEvents.filter(e => e.organizingCommittee.includes(user.email!)),
+        upcomingRegisteredEvents: uniqueEvents.filter(e => isRegistered(e) && e.date >= now && !isHost(e) && !isOC(e)),
+        attendedEvents: uniqueEvents.filter(e => isRegistered(e) && e.date < now && !isHost(e) && !isOC(e)),
+        hostedEvents: uniqueEvents.filter(e => isHost(e)),
+        ocEvents: uniqueEvents.filter(e => isOC(e)),
     }
   }, [allUserEvents, user]);
 
@@ -158,7 +151,7 @@ export default function DashboardPage() {
         </Card>
 
         <Tabs defaultValue="registered">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8">
             <TabsTrigger value="registered">Upcoming</TabsTrigger>
             <TabsTrigger value="attended">Attended</TabsTrigger>
             <TabsTrigger value="hosted">My Events</TabsTrigger>
