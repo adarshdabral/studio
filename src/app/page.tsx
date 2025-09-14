@@ -12,15 +12,23 @@ import { Event } from '@/lib/definitions';
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = listenToEvents((newEvents) => {
-      setEvents(newEvents);
-      setLoading(false);
-    });
+    try {
+      const unsubscribe = listenToEvents((newEvents) => {
+        setEvents(newEvents);
+        setLoading(false);
+        setError(null);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (err) {
+      console.error(err);
+      setError("Could not connect to the database. Please check your configuration.");
+      setLoading(false);
+    }
   }, []);
 
   return (
@@ -53,6 +61,11 @@ export default function Home() {
           <div className="flex justify-center items-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
+        ) : error ? (
+           <div className="text-center text-destructive-foreground bg-destructive/80 p-4 rounded-md">
+             <p className="font-bold">Error loading events:</p>
+             <p>{error}</p>
+           </div>
         ) : events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map((event) => (
@@ -61,7 +74,7 @@ export default function Home() {
           </div>
         ) : (
            <div className="text-center text-muted-foreground">
-             <p>No events found.</p>
+             <p>No upcoming events found.</p>
              <p className="text-sm mt-2">Check back later or create a new event!</p>
            </div>
         )}

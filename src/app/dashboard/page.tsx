@@ -4,7 +4,6 @@
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getEventsByAttendee, getEventsByHost, getEventsByOC } from "@/lib/data";
 import { EventCard } from "@/components/events/event-card";
 import {
   Card,
@@ -16,7 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Event } from "@/lib/definitions";
 import { Loader2 } from "lucide-react";
-import { onSnapshot, collection, query, where } from "firebase/firestore";
+import { onSnapshot, collection, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const eventFromDoc = (doc: any): Event => {
@@ -24,7 +23,7 @@ const eventFromDoc = (doc: any): Event => {
     return {
         id: doc.id,
         ...data,
-        date: data.date.toDate(),
+        date: (data.date as Timestamp).toDate(),
     } as Event;
 };
 
@@ -32,7 +31,7 @@ const eventFromDoc = (doc: any): Event => {
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [registeredEvents, setRegisteredEvents] = useState<Event[]>([]);
+  const [upcomingRegisteredEvents, setUpcomingRegisteredEvents] = useState<Event[]>([]);
   const [attendedEvents, setAttendedEvents] = useState<Event[]>([]);
   const [hostedEvents, setHostedEvents] = useState<Event[]>([]);
   const [ocEvents, setOcEvents] = useState<Event[]>([]);
@@ -49,30 +48,34 @@ export default function DashboardPage() {
 
     setDataLoading(true);
     const eventsCollection = collection(db, "events");
+    const now = new Date();
 
     const queries = {
-        registered: query(eventsCollection, where("attendees", "array-contains", user.email)),
+        registeredUpcoming: query(eventsCollection, where("attendees", "array-contains", user.email), where("date", ">=", now)),
+        registeredPast: query(eventsCollection, where("attendees", "array-contains", user.email), where("date", "<", now)),
         hosted: query(eventsCollection, where("hostId", "==", user.uid)),
         oc: query(eventsCollection, where("organizingCommittee", "array-contains", user.email)),
     };
 
     const unsubscribes = [
-        onSnapshot(queries.registered, (snapshot) => {
-            const allRegistered = snapshot.docs.map(doc => eventFromDoc(doc));
-            const now = new Date();
-            setRegisteredEvents(allRegistered.filter(event => event.date >= now));
-            setAttendedEvents(allRegistered.filter(event => event.date < now));
-        }),
+        onSnapshot(queries.registeredUpcoming, (snapshot) => {
+            setUpcomingRegisteredEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
+        }, (error) => console.error("Error fetching upcoming registered events:", error)),
+        onSnapshot(queries.registeredPast, (snapshot) => {
+            setAttendedEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
+        }, (error) => console.error("Error fetching past attended events:", error)),
         onSnapshot(queries.hosted, (snapshot) => {
             setHostedEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
+            setDataLoading(false); // Consider loading complete after the main queries fetch
+        }, (error) => {
+            console.error("Error fetching hosted events:", error);
+            setDataLoading(false);
         }),
         onSnapshot(queries.oc, (snapshot) => {
             setOcEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
-        }),
+        }, (error) => console.error("Error fetching OC events:", error)),
     ];
     
-    setDataLoading(false);
-
     return () => unsubscribes.forEach(unsub => unsub());
 
   }, [user]);
@@ -104,8 +107,8 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-3xl font-bold">{dataLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto"/> : registeredEvents.length}</p>
-              <p className="text-sm text-muted-foreground">Registered</p>
+              <p className="text-3xl font-bold">{dataLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto"/> : upcomingRegisteredEvents.length}</p>
+              <p className="text-sm text-muted-foreground">Upcoming</p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-3xl font-bold">{dataLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto"/> : hostedEvents.length}</p>
@@ -123,8 +126,9 @@ export default function DashboardPage() {
         </Card>
 
         <Tabs defaultValue="registered">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="registered">Upcoming Events</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="registered">Upcoming</TabsTrigger>
+            <TabsTrigger value="attended">Attended</TabsTrigger>
             <TabsTrigger value="hosted">My Events</TabsTrigger>
             <TabsTrigger value="oc">OC Duties</TabsTrigger>
           </TabsList>
@@ -137,12 +141,24 @@ export default function DashboardPage() {
             <>
               <TabsContent value="registered">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {registeredEvents.length > 0 ? (
-                    registeredEvents.map((event) => (
+                  {upcomingRegisteredEvents.length > 0 ? (
+                    upcomingRegisteredEvents.map((event) => (
                       <EventCard key={event.id} event={event} />
                     ))
                   ) : (
                     <p className="col-span-full text-center text-muted-foreground">You haven't registered for any upcoming events yet.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+               <TabsContent value="attended">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {attendedEvents.length > 0 ? (
+                    attendedEvents.map((event) => (
+                      <EventCard key={event.id} event={event} />
+                    ))
+                  ) : (
+                    <p className="col-span-full text-center text-muted-foreground">You haven't attended any events yet.</p>
                   )}
                 </div>
               </TabsContent>

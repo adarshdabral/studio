@@ -107,13 +107,20 @@ export const getEvents = async (): Promise<Event[]> => {
 };
 
 export const getEventById = async (id: string): Promise<Event | undefined> => {
-    const eventDocRef = doc(db, "events", id);
-    const eventSnap = await getDoc(eventDocRef);
+    try {
+        const eventDocRef = doc(db, "events", id);
+        const eventSnap = await getDoc(eventDocRef);
 
-    if (eventSnap.exists()) {
-        return eventFromDoc(eventSnap);
-    } else {
-        return undefined;
+        if (eventSnap.exists()) {
+            return eventFromDoc(eventSnap);
+        } else {
+            console.log(`No event found with id: ${id}`);
+            return undefined;
+        }
+    } catch (error) {
+        console.error(`Error fetching event with id ${id}:`, error);
+        // Re-throwing the error is important for Next.js to catch it and show an error page.
+        throw new Error(`Failed to get document. Firestore error: ${error}`);
     }
 };
 
@@ -140,8 +147,11 @@ export const getEventsByOC = async (ocEmail: string): Promise<Event[]> => {
 
 export const listenToEvents = (callback: (events: Event[]) => void): Unsubscribe => {
     const eventsCollection = collection(db, 'events');
-    return onSnapshot(eventsCollection, snapshot => {
+    const q = query(eventsCollection, where("date", ">=", new Date()));
+    return onSnapshot(q, snapshot => {
       const events = snapshot.docs.map(doc => eventFromDoc(doc));
       callback(events);
+    }, (error) => {
+        console.error("Error listening to events:", error);
     });
 };
