@@ -17,9 +17,10 @@ type PageProps = {
   };
 };
 
-export default function EventDetailPage({ params: { id } }: PageProps) {
+export default function EventDetailPage({ params }: PageProps) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
+  const { id } = params;
 
   useEffect(() => {
     const fetchEvent = async () => {
