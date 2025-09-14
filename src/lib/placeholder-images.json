@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "event-1",
+      "description": "A vibrant music festival on campus.",
+      "imageUrl": "https://picsum.photos/seed/1/600/400",
+      "imageHint": "music festival"
+    },
+    {
+      "id": "event-2",
+      "description": "A hackathon for aspiring developers.",
+      "imageUrl": "https://picsum.photos/seed/2/600/400",
+      "imageHint": "hackathon code"
+    },
+    {
+      "id": "event-3",
+      "description": "An art exhibition showcasing student talent.",
+      "imageUrl": "https://picsum.photos/seed/3/600/400",
+      "imageHint": "art exhibition"
+    },
+    {
+      "id": "event-4",
+      "description": "A career fair with top tech companies.",
+      "imageUrl": "https://picsum.photos/seed/4/600/400",
+      "imageHint": "career fair"
+    },
+    {
+      "id": "event-5",
+      "description": "A guest lecture on entrepreneurship.",
+      "imageUrl": "https://picsum.photos/seed/5/600/400",
+      "imageHint": "lecture hall"
+    },
+    {
+      "id": "event-6",
+      "description": "A university sports day.",
+      "imageUrl": "https://picsum.photos/seed/6/600/400",
+      "imageHint": "sports stadium"
+    }
+  ]
 }
