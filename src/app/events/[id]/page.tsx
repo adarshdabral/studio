@@ -17,14 +17,14 @@ type PageProps = {
   };
 };
 
-export default function EventDetailPage({ params }: PageProps) {
+export default function EventDetailPage({ params: { id } }: PageProps) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const fetchedEvent = await getEventById(params.id);
+        const fetchedEvent = await getEventById(id);
         if (fetchedEvent) {
           setEvent(fetchedEvent);
         } else {
@@ -39,7 +39,7 @@ export default function EventDetailPage({ params }: PageProps) {
     };
 
     fetchEvent();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
