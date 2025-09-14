@@ -47,6 +47,7 @@ import type { TaskSuggestion } from "@/lib/definitions";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { format } from "date-fns";
 
 
 const formSchema = z.object({
@@ -116,7 +117,7 @@ export function CreateEventForm() {
 
     setIsSuggesting(true);
     const response = await suggestAndAssignTasks({
-      eventDetails: `Name: ${formData.name}, Description: ${formData.description}, Date: ${formData.date}, Venue: ${formData.venue}`,
+      eventDetails: `Name: ${formData.name}, Description: ${formData.description}, Date: ${format(formData.date, 'PPP p')}, Venue: ${formData.venue}`,
       organizingCommitteeMembers: formData.organizingCommittee.map(
         (m) => m.email
       ),
@@ -348,5 +349,3 @@ export function CreateEventForm() {
     </>
   );
 }
-
-    
