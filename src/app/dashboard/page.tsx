@@ -16,6 +16,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Event } from "@/lib/definitions";
 import { Loader2 } from "lucide-react";
+import { onSnapshot, collection, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+const eventFromDoc = (doc: any): Event => {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        date: data.date.toDate(),
+    } as Event;
+};
+
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -33,29 +45,36 @@ export default function DashboardPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    async function fetchUserEvents() {
-      if (user?.email) {
-        setDataLoading(true);
-        const [registered, hosted, oc] = await Promise.all([
-          getEventsByAttendee(user.email),
-          getEventsByHost(user.uid),
-          getEventsByOC(user.email)
-        ]);
-        
-        const now = new Date();
-        const pastEvents = registered.filter(event => event.date < now);
-        const upcomingEvents = registered.filter(event => event.date >= now);
+    if (!user?.email || !user?.uid) return;
 
-        setRegisteredEvents(upcomingEvents);
-        setAttendedEvents(pastEvents);
-        setHostedEvents(hosted);
-        setOcEvents(oc);
-        setDataLoading(false);
-      }
-    }
-    if (user) {
-      fetchUserEvents();
-    }
+    setDataLoading(true);
+    const eventsCollection = collection(db, "events");
+
+    const queries = {
+        registered: query(eventsCollection, where("attendees", "array-contains", user.email)),
+        hosted: query(eventsCollection, where("hostId", "==", user.uid)),
+        oc: query(eventsCollection, where("organizingCommittee", "array-contains", user.email)),
+    };
+
+    const unsubscribes = [
+        onSnapshot(queries.registered, (snapshot) => {
+            const allRegistered = snapshot.docs.map(doc => eventFromDoc(doc));
+            const now = new Date();
+            setRegisteredEvents(allRegistered.filter(event => event.date >= now));
+            setAttendedEvents(allRegistered.filter(event => event.date < now));
+        }),
+        onSnapshot(queries.hosted, (snapshot) => {
+            setHostedEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
+        }),
+        onSnapshot(queries.oc, (snapshot) => {
+            setOcEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
+        }),
+    ];
+    
+    setDataLoading(false);
+
+    return () => unsubscribes.forEach(unsub => unsub());
+
   }, [user]);
 
   if (authLoading || !user) {
@@ -158,5 +177,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

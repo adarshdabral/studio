@@ -1,11 +1,27 @@
+
+"use client";
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/components/events/event-card';
-import { getEvents } from '@/lib/data';
-import { ArrowRight } from 'lucide-react';
+import { listenToEvents } from '@/lib/data';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Event } from '@/lib/definitions';
 
-export default async function Home() {
-  const events = await getEvents();
+export default function Home() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const unsubscribe = listenToEvents((newEvents) => {
+      setEvents(newEvents);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -33,7 +49,11 @@ export default async function Home() {
         <h2 className="text-3xl font-bold font-headline text-center mb-8">
           Upcoming Events
         </h2>
-        {events.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map((event) => (
               <EventCard key={event.id} event={event} />

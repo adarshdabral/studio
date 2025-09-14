@@ -1,7 +1,7 @@
 import { Event } from "@/lib/definitions";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, getDoc, Timestamp, query, where } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, Timestamp, query, where, onSnapshot, Unsubscribe } from "firebase/firestore";
 
 const seedEvents: Omit<Event, 'id'>[] = [
     {
@@ -136,4 +136,12 @@ export const getEventsByOC = async (ocEmail: string): Promise<Event[]> => {
     const q = query(eventsCollection, where("organizingCommittee", "array-contains", ocEmail));
     const eventSnapshot = await getDocs(q);
     return eventSnapshot.docs.map(doc => eventFromDoc(doc));
+};
+
+export const listenToEvents = (callback: (events: Event[]) => void): Unsubscribe => {
+    const eventsCollection = collection(db, 'events');
+    return onSnapshot(eventsCollection, snapshot => {
+      const events = snapshot.docs.map(doc => eventFromDoc(doc));
+      callback(events);
+    });
 };
