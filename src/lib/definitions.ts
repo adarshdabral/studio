@@ -8,6 +8,9 @@ export type Event = {
   venue: string;
   image: string;
   imageHint: string;
+  hostId: string;
+  organizingCommittee: string[];
+  attendees: string[];
 };
 
 export type OCMember = {

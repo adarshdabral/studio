@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -24,7 +25,7 @@ import {
   Rocket,
   Loader2,
 } from "lucide-react";
-import { suggestAndAssignTasks } from "@/lib/actions";
+import { suggestAndAssignTasks, createEvent } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -43,6 +44,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { TaskSuggestion } from "@/lib/definitions";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+
 
 const formSchema = z.object({
   name: z.string().min(3, "Event name must be at least 3 characters."),
@@ -53,13 +58,16 @@ const formSchema = z.object({
   venue: z.string().min(3, "Venue must be at least 3 characters."),
   organizingCommittee: z
     .array(z.object({ email: z.string().email("Invalid email address.") }))
-    .min(1, "At least one committee member is required."),
+    .min(0), // Can be zero now
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export function CreateEventForm() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [ocInput, setOcInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState<TaskSuggestion[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -96,12 +104,12 @@ export function CreateEventForm() {
   const handleSuggestTasks = async () => {
     const formData = form.getValues();
     const result = formSchema.safeParse(formData);
-    if (!result.success) {
+    if (!result.success || formData.organizingCommittee.length === 0) {
       form.trigger();
       toast({
         variant: "destructive",
         title: "Incomplete Form",
-        description: "Please fill out all event details and add at least one OC member.",
+        description: "Please fill out all event details and add at least one OC member for suggestions.",
       });
       return;
     }
@@ -128,13 +136,40 @@ export function CreateEventForm() {
     }
   };
 
-  function onSubmit(values: FormValues) {
-    console.log(values);
-    toast({
-      title: "Event Created!",
-      description: `Your event "${values.name}" has been successfully created.`,
-    });
-    form.reset();
+  async function onSubmit(values: FormValues) {
+    if (!user) {
+        toast({ variant: "destructive", title: "Not Authenticated", description: "You must be logged in to create an event." });
+        return;
+    }
+    setIsSubmitting(true);
+
+    const randomImage = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
+
+    const eventData = {
+        ...values,
+        hostId: user.uid,
+        organizingCommittee: values.organizingCommittee.map(oc => oc.email),
+        image: randomImage.imageUrl,
+        imageHint: randomImage.imageHint,
+    };
+
+    const result = await createEvent(eventData);
+
+    setIsSubmitting(false);
+
+    if (result.success) {
+        toast({
+            title: "Event Created!",
+            description: `Your event "${values.name}" has been successfully created.`,
+        });
+        router.push(`/events/${result.data.id}`);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: result.error || "Failed to create event."
+        });
+    }
   }
 
   return (
@@ -257,7 +292,7 @@ export function CreateEventForm() {
               type="button"
               variant="outline"
               onClick={handleSuggestTasks}
-              disabled={isSuggesting}
+              disabled={isSuggesting || form.getValues().organizingCommittee.length === 0}
             >
               {isSuggesting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -266,8 +301,8 @@ export function CreateEventForm() {
               )}
               AI-Powered Task Assigner
             </Button>
-            <Button type="submit" size="lg">
-              <Rocket className="mr-2 h-4 w-4" />
+            <Button type="submit" size="lg" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Rocket className="mr-2 h-4 w-4" />}
               Launch Event
             </Button>
           </div>

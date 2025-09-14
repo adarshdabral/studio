@@ -20,6 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import { RegisterButton } from "@/components/events/register-button";
 
 type PageProps = {
   params: {
@@ -27,8 +28,8 @@ type PageProps = {
   };
 };
 
-export default function EventDetailPage({ params }: PageProps) {
-  const event = getEventById(params.id);
+export default async function EventDetailPage({ params }: PageProps) {
+  const event = await getEventById(params.id);
 
   if (!event) {
     notFound();
@@ -75,32 +76,7 @@ export default function EventDetailPage({ params }: PageProps) {
             </p>
 
             <div className="mt-8 text-center">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Ticket className="mr-2" />
-                    Register for Event
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Registration Confirmed!</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You have successfully registered for {event.name}. A
-                      confirmation ticket has been sent to your email.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <div className="my-4 p-6 border-dashed border-2 border-primary rounded-lg text-center bg-background">
-                    <Ticket className="h-16 w-16 mx-auto text-primary" />
-                    <h3 className="mt-4 text-lg font-bold">{event.name}</h3>
-                    <p className="text-muted-foreground">{format(event.date, "PPP p")}</p>
-                    <p className="font-mono text-xs mt-4 bg-muted p-2 rounded-md">TICKET-ID: INNO-{Math.floor(100000 + Math.random() * 900000)}</p>
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogAction>Close</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <RegisterButton event={event} />
             </div>
           </div>
         </div>
