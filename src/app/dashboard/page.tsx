@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth } from "@/context/auth-context";
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [registeredEvents, setRegisteredEvents] = useState<Event[]>([]);
+  const [attendedEvents, setAttendedEvents] = useState<Event[]>([]);
   const [hostedEvents, setHostedEvents] = useState<Event[]>([]);
   const [ocEvents, setOcEvents] = useState<Event[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -39,7 +41,13 @@ export default function DashboardPage() {
           getEventsByHost(user.uid),
           getEventsByOC(user.email)
         ]);
-        setRegisteredEvents(registered);
+        
+        const now = new Date();
+        const pastEvents = registered.filter(event => event.date < now);
+        const upcomingEvents = registered.filter(event => event.date >= now);
+
+        setRegisteredEvents(upcomingEvents);
+        setAttendedEvents(pastEvents);
         setHostedEvents(hosted);
         setOcEvents(oc);
         setDataLoading(false);
@@ -51,7 +59,11 @@ export default function DashboardPage() {
   }, [user]);
 
   if (authLoading || !user) {
-    return null; // AuthProvider already shows a loader
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
   
   return (
@@ -85,7 +97,7 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground">OC Member</p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
-               <p className="text-3xl font-bold">0</p>
+               <p className="text-3xl font-bold">{dataLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto"/> : attendedEvents.length}</p>
               <p className="text-sm text-muted-foreground">Attended</p>
             </div>
           </CardContent>
@@ -93,7 +105,7 @@ export default function DashboardPage() {
 
         <Tabs defaultValue="registered">
           <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="registered">Registered Events</TabsTrigger>
+            <TabsTrigger value="registered">Upcoming Events</TabsTrigger>
             <TabsTrigger value="hosted">My Events</TabsTrigger>
             <TabsTrigger value="oc">OC Duties</TabsTrigger>
           </TabsList>
@@ -111,7 +123,7 @@ export default function DashboardPage() {
                       <EventCard key={event.id} event={event} />
                     ))
                   ) : (
-                    <p className="col-span-full text-center text-muted-foreground">You haven't registered for any events yet.</p>
+                    <p className="col-span-full text-center text-muted-foreground">You haven't registered for any upcoming events yet.</p>
                   )}
                 </div>
               </TabsContent>
@@ -146,3 +158,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

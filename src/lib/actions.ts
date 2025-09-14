@@ -47,7 +47,10 @@ export async function suggestAndAssignTasks(
   }
 }
 
-export async function createEvent(eventData: Omit<Event, 'id' | 'attendees'>): Promise<ActionResponse> {
+// The data coming from the form doesn't include id, attendees
+type EventFormData = Omit<Event, 'id' | 'attendees'>;
+
+export async function createEvent(eventData: EventFormData): Promise<ActionResponse> {
   try {
     const eventCollection = collection(db, 'events');
     const docRef = await addDoc(eventCollection, {
@@ -69,15 +72,14 @@ export async function registerForEvent(eventId: string, userEmail: string): Prom
   try {
     const eventDocRef = doc(db, 'events', eventId);
     
-    // Check if user is already registered
     const eventSnap = await getDoc(eventDocRef);
-    if (eventSnap.exists()) {
-      const eventData = eventSnap.data() as Event;
-      if (eventData.attendees && eventData.attendees.includes(userEmail)) {
-        return { success: false, error: "You are already registered for this event." };
-      }
-    } else {
+    if (!eventSnap.exists()) {
         return { success: false, error: "Event not found." };
+    }
+    
+    const eventData = eventSnap.data() as Event;
+    if (eventData.attendees && eventData.attendees.includes(userEmail)) {
+      return { success: false, error: "You are already registered for this event." };
     }
 
     await updateDoc(eventDocRef, {
@@ -93,3 +95,5 @@ export async function registerForEvent(eventId: string, userEmail: string): Prom
     return { success: false, error: "Failed to register for the event." };
   }
 }
+
+    
