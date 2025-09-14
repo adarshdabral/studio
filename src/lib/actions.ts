@@ -4,7 +4,7 @@
 import { suggestTasks } from "@/ai/flows/ai-task-assigner";
 import type { SuggestTasksInput, SuggestTasksOutput } from "@/ai/flows/ai-task-assigner";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, doc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import type { Event } from "./definitions";
 
@@ -56,7 +56,7 @@ export async function createEvent(eventData: EventFormData): Promise<ActionRespo
     const docRef = await addDoc(eventCollection, {
       ...eventData,
       attendees: [],
-      createdAt: serverTimestamp(),
+      createdAt: new Date(), // Use client-side timestamp
     });
     revalidatePath('/');
     revalidatePath('/dashboard');
