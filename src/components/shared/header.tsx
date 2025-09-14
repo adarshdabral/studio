@@ -34,15 +34,17 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
-        <Link href="/" className="mr-6 flex items-center">
-          <Rocket className="h-6 w-6 text-primary mr-2" />
-          <div className="flex flex-col">
-            <span className="font-bold font-headline sm:inline-block">
-              Innovent
-            </span>
-            <span className="text-xs text-muted-foreground hidden sm:inline-block">
-              A Dabral Enterprises Product
-            </span>
+        <Link href="/" className="mr-6 flex items-center p-2 rounded-full bg-gradient-to-br from-primary via-accent to-secondary">
+          <div className="flex items-center justify-center bg-background p-2 rounded-full">
+            <Rocket className="h-6 w-6 text-primary mr-2" />
+            <div className="flex flex-col text-center">
+              <span className="font-bold font-headline sm:inline-block">
+                Innovent
+              </span>
+              <span className="text-xs text-muted-foreground hidden sm:inline-block">
+                A Dabral Enterprises Product
+              </span>
+            </div>
           </div>
         </Link>
         <nav className="flex items-center gap-6 text-sm">
