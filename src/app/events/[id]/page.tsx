@@ -1,26 +1,15 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { getEventById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { format } from "date-fns";
-import {
-  Calendar,
-  MapPin,
-  Ticket,
-  ChevronLeft,
-} from "lucide-react";
+import { Calendar, MapPin, ChevronLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import { RegisterButton } from "@/components/events/register-button";
+import type { Event } from "@/lib/definitions";
 
 type PageProps = {
   params: {
@@ -28,11 +17,40 @@ type PageProps = {
   };
 };
 
-export default async function EventDetailPage({ params }: PageProps) {
-  const event = await getEventById(params.id);
+export default function EventDetailPage({ params }: PageProps) {
+  const [event, setEvent] = useState<Event | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        const fetchedEvent = await getEventById(params.id);
+        if (fetchedEvent) {
+          setEvent(fetchedEvent);
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error("Failed to fetch event:", error);
+        // Handle error display if necessary
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvent();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!event) {
-    notFound();
+    return notFound();
   }
 
   return (
