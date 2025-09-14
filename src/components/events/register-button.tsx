@@ -17,8 +17,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
-  } from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 
 type RegisterButtonProps = {
@@ -82,32 +81,31 @@ export function RegisterButton({ event }: RegisterButtonProps) {
   }
 
   return (
-    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <AlertDialogTrigger asChild>
+    <>
         <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleRegister} disabled={isLoading}>
           {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Ticket className="mr-2" />}
           Register for Event
         </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Registration Confirmed!</AlertDialogTitle>
-          <AlertDialogDescription>
-            You have successfully registered for {event.name}. See you there!
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="my-4 p-6 border-dashed border-2 border-primary rounded-lg text-center bg-background">
-          <Ticket className="h-16 w-16 mx-auto text-primary" />
-          <h3 className="mt-4 text-lg font-bold">{event.name}</h3>
-          <p className="text-muted-foreground">{format(event.date, "PPP p")}</p>
-          <p className="font-mono text-xs mt-4 bg-muted p-2 rounded-md">TICKET-ID: INNO-{Math.floor(100000 + Math.random() * 900000)}</p>
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogAction onClick={() => router.refresh()}>Close</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        
+        <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Registration Confirmed!</AlertDialogTitle>
+                <AlertDialogDescription>
+                    You have successfully registered for {event.name}. See you there!
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="my-4 p-6 border-dashed border-2 border-primary rounded-lg text-center bg-background">
+                <Ticket className="h-16 w-16 mx-auto text-primary" />
+                <h3 className="mt-4 text-lg font-bold">{event.name}</h3>
+                <p className="text-muted-foreground">{format(event.date, "PPP p")}</p>
+                <p className="font-mono text-xs mt-4 bg-muted p-2 rounded-md">TICKET-ID: INNO-{Math.floor(100000 + Math.random() * 900000)}</p>
+                </div>
+                <AlertDialogFooter>
+                <AlertDialogAction onClick={() => router.refresh()}>Close</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    </>
   );
 }
-
-    

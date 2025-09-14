@@ -3,7 +3,7 @@
 
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { EventCard } from "@/components/events/event-card";
 import {
   Card,
@@ -31,10 +31,7 @@ const eventFromDoc = (doc: any): Event => {
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [upcomingRegisteredEvents, setUpcomingRegisteredEvents] = useState<Event[]>([]);
-  const [attendedEvents, setAttendedEvents] = useState<Event[]>([]);
-  const [hostedEvents, setHostedEvents] = useState<Event[]>([]);
-  const [ocEvents, setOcEvents] = useState<Event[]>([]);
+  const [allUserEvents, setAllUserEvents] = useState<Event[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
@@ -48,39 +45,72 @@ export default function DashboardPage() {
 
     setDataLoading(true);
     const eventsCollection = collection(db, "events");
-    const now = new Date();
 
-    const queries = {
-        registeredUpcoming: query(eventsCollection, where("attendees", "array-contains", user.email), where("date", ">=", now)),
-        registeredPast: query(eventsCollection, where("attendees", "array-contains", user.email), where("date", "<", now)),
-        hosted: query(eventsCollection, where("hostId", "==", user.uid)),
-        oc: query(eventsCollection, where("organizingCommittee", "array-contains", user.email)),
-    };
-
-    const unsubscribes = [
-        onSnapshot(queries.registeredUpcoming, (snapshot) => {
-            setUpcomingRegisteredEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
-            setDataLoading(false); // Changed to set loading false on first data receipt
-        }, (error) => {
-            console.error("Error fetching upcoming registered events:", error);
-            setDataLoading(false);
-        }),
-        onSnapshot(queries.registeredPast, (snapshot) => {
-            setAttendedEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
-        }, (error) => console.error("Error fetching past attended events:", error)),
-        onSnapshot(queries.hosted, (snapshot) => {
-            setHostedEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
-        }, (error) => {
-            console.error("Error fetching hosted events:", error);
-        }),
-        onSnapshot(queries.oc, (snapshot) => {
-            setOcEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
-        }, (error) => console.error("Error fetching OC events:", error)),
+    // A single query to get all events relevant to the user
+    const userEventsQuery = query(eventsCollection, 
+        where("attendees", "array-contains-any", [user.email]),
+        // Note: Firestore does not support logical OR in a single query across different fields.
+        // We will fetch based on attendees and filter locally for host and OC roles.
+        // For a more scalable solution, one might denormalize data, but this is optimal for now.
+    );
+    
+    // We will have separate listeners for host and OC for real-time accuracy without complex client-side merging logic from a single "all events" listener
+    const queries = [
+        query(eventsCollection, where("attendees", "array-contains", user.email)),
+        query(eventsCollection, where("hostId", "==", user.uid)),
+        query(eventsCollection, where("organizingCommittee", "array-contains", user.email)),
     ];
+
+    let loadingStates = queries.length;
+    const loadedData: { [key: number]: Event[] } = {};
+
+    const unsubscribes = queries.map((q, index) => 
+        onSnapshot(q, (snapshot) => {
+            loadedData[index] = snapshot.docs.map(doc => eventFromDoc(doc));
+            
+            // Decrement loading count only on the first snapshot for each query
+            if(loadingStates > 0) {
+                loadingStates--;
+                if (loadingStates === 0) {
+                    setDataLoading(false);
+                }
+            }
+
+            // Combine all data into a single state
+            const combinedEvents = Object.values(loadedData).flat();
+            const uniqueEvents = Array.from(new Map(combinedEvents.map(e => [e.id, e])).values());
+            setAllUserEvents(uniqueEvents);
+
+        }, (error) => {
+            console.error("Error fetching events:", error);
+            if(loadingStates > 0) {
+                loadingStates--;
+                if (loadingStates === 0) {
+                    setDataLoading(false);
+                }
+            }
+        })
+    );
     
     return () => unsubscribes.forEach(unsub => unsub());
 
   }, [user]);
+
+  const { upcomingRegisteredEvents, attendedEvents, hostedEvents, ocEvents } = useMemo(() => {
+    if (!user?.email || !user?.uid) {
+        return { upcomingRegisteredEvents: [], attendedEvents: [], hostedEvents: [], ocEvents: [] };
+    }
+    const now = new Date();
+    const isRegistered = (e: Event) => e.attendees.includes(user.email!);
+
+    return {
+        upcomingRegisteredEvents: allUserEvents.filter(e => isRegistered(e) && e.date >= now),
+        attendedEvents: allUserEvents.filter(e => isRegistered(e) && e.date < now),
+        hostedEvents: allUserEvents.filter(e => e.hostId === user.uid),
+        ocEvents: allUserEvents.filter(e => e.organizingCommittee.includes(user.email!)),
+    }
+  }, [allUserEvents, user]);
+
 
   if (authLoading || !user) {
     return (
