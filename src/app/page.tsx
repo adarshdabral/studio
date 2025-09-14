@@ -16,19 +16,24 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true);
+    let unsubscribe: () => void;
     try {
-      const unsubscribe = listenToEvents((newEvents) => {
+      unsubscribe = listenToEvents((newEvents) => {
         setEvents(newEvents);
         setLoading(false);
         setError(null);
       });
-
-      return () => unsubscribe();
     } catch (err) {
       console.error(err);
       setError("Could not connect to the database. Please check your configuration.");
       setLoading(false);
     }
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   return (

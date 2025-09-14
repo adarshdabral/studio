@@ -60,16 +60,18 @@ export default function DashboardPage() {
     const unsubscribes = [
         onSnapshot(queries.registeredUpcoming, (snapshot) => {
             setUpcomingRegisteredEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
-        }, (error) => console.error("Error fetching upcoming registered events:", error)),
+            setDataLoading(false); // Changed to set loading false on first data receipt
+        }, (error) => {
+            console.error("Error fetching upcoming registered events:", error);
+            setDataLoading(false);
+        }),
         onSnapshot(queries.registeredPast, (snapshot) => {
             setAttendedEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
         }, (error) => console.error("Error fetching past attended events:", error)),
         onSnapshot(queries.hosted, (snapshot) => {
             setHostedEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
-            setDataLoading(false); // Consider loading complete after the main queries fetch
         }, (error) => {
             console.error("Error fetching hosted events:", error);
-            setDataLoading(false);
         }),
         onSnapshot(queries.oc, (snapshot) => {
             setOcEvents(snapshot.docs.map(doc => eventFromDoc(doc)));
