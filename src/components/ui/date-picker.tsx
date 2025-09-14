@@ -1,3 +1,4 @@
+
 "use client";
 
 import { format } from "date-fns";
@@ -28,13 +29,13 @@ export function DatePicker({ field }: DatePickerProps) {
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {field.value ? format(field.value, "PPP p") : <span>Pick a date and time</span>}
+          {field.value ? format(new Date(field.value), "PPP p") : <span>Pick a date and time</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Calendar
           mode="single"
-          selected={field.value}
+          selected={field.value ? new Date(field.value) : undefined}
           onSelect={field.onChange}
           initialFocus
         />

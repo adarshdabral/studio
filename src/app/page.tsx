@@ -16,23 +16,19 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true);
-    let unsubscribe: () => void;
-    try {
-      unsubscribe = listenToEvents((newEvents) => {
-        setEvents(newEvents);
-        setLoading(false);
-        setError(null);
-      });
-    } catch (err) {
-      console.error(err);
-      setError("Could not connect to the database. Please check your configuration.");
+    
+    const unsubscribe = listenToEvents((newEvents) => {
+      setEvents(newEvents);
       setLoading(false);
-    }
+      setError(null);
+    }, (err) => {
+      console.error(err);
+      setError("Could not connect to the database. Please check your configuration and security rules.");
+      setLoading(false);
+    });
     
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      unsubscribe();
     };
   }, []);
 
