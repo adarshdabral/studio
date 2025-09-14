@@ -4,7 +4,7 @@
 import { suggestTasks } from "@/ai/flows/ai-task-assigner";
 import type { SuggestTasksInput, SuggestTasksOutput } from "@/ai/flows/ai-task-assigner";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, doc, updateDoc, arrayUnion, serverTimestamp, getDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import type { Event } from "./definitions";
 
@@ -72,16 +72,8 @@ export async function registerForEvent(eventId: string, userEmail: string): Prom
   try {
     const eventDocRef = doc(db, 'events', eventId);
     
-    const eventSnap = await getDoc(eventDocRef);
-    if (!eventSnap.exists()) {
-        return { success: false, error: "Event not found." };
-    }
-    
-    const eventData = eventSnap.data() as Event;
-    if (eventData.attendees && eventData.attendees.includes(userEmail)) {
-      return { success: false, error: "You are already registered for this event." };
-    }
-
+    // We will let Firestore's arrayUnion handle duplication and security rules handle auth.
+    // This is more atomic and avoids a read-before-write scenario.
     await updateDoc(eventDocRef, {
       attendees: arrayUnion(userEmail)
     });
@@ -92,8 +84,11 @@ export async function registerForEvent(eventId: string, userEmail: string): Prom
     return { success: true };
   } catch (error: any) {
     console.error("Error registering for event:", error);
+    // The security rules will reject this if the user is already in the array,
+    // but the error message might not be user-friendly. We can make it better.
+     if ((error.code as string)?.includes('permission-denied')) {
+      return { success: false, error: "You are already registered or do not have permission." };
+    }
     return { success: false, error: "Failed to register for the event." };
   }
 }
-
-    
