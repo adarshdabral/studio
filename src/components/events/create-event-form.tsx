@@ -25,7 +25,7 @@ import {
   Rocket,
   Loader2,
 } from "lucide-react";
-import { suggestAndAssignTasks, createEvent } from "@/lib/actions";
+import { suggestAndAssignTasks } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -48,6 +48,8 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { format } from "date-fns";
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const formSchema = z.object({
@@ -152,23 +154,26 @@ export function CreateEventForm() {
         organizingCommittee: values.organizingCommittee.map(oc => oc.email),
         image: randomImage.imageUrl,
         imageHint: randomImage.imageHint,
+        attendees: [],
+        createdAt: new Date(),
     };
 
-    const result = await createEvent(eventData);
-
-    setIsSubmitting(false);
-
-    if (result.success) {
+    try {
+        const eventCollection = collection(db, 'events');
+        const docRef = await addDoc(eventCollection, eventData);
+        
+        setIsSubmitting(false);
         toast({
             title: "Event Created!",
             description: `Your event "${values.name}" has been successfully created.`,
         });
-        router.push(`/events/${result.data.id}`);
-    } else {
+        router.push(`/events/${docRef.id}`);
+    } catch (error: any) {
+        setIsSubmitting(false);
         toast({
             variant: "destructive",
-            title: "Error",
-            description: result.error || "Failed to create event."
+            title: "Error Creating Event",
+            description: error.message || "Failed to create event."
         });
     }
   }

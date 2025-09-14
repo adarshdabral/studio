@@ -4,9 +4,8 @@
 import { suggestTasks } from "@/ai/flows/ai-task-assigner";
 import type { SuggestTasksInput, SuggestTasksOutput } from "@/ai/flows/ai-task-assigner";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
-import type { Event } from "./definitions";
 
 type ActionResponse = {
   success: boolean;
@@ -46,27 +45,6 @@ export async function suggestAndAssignTasks(
     };
   }
 }
-
-// The data coming from the form doesn't include id, attendees
-type EventFormData = Omit<Event, 'id' | 'attendees'>;
-
-export async function createEvent(eventData: EventFormData): Promise<ActionResponse> {
-  try {
-    const eventCollection = collection(db, 'events');
-    const docRef = await addDoc(eventCollection, {
-      ...eventData,
-      attendees: [],
-      createdAt: new Date(), // Use client-side timestamp
-    });
-    revalidatePath('/');
-    revalidatePath('/dashboard');
-    return { success: true, data: { id: docRef.id } };
-  } catch (error: any) {
-    console.error("Error creating event:", error);
-    return { success: false, error: error.message };
-  }
-}
-
 
 export async function registerForEvent(eventId: string, userEmail: string): Promise<ActionResponse> {
   try {
