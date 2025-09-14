@@ -42,7 +42,7 @@ export default function Header() {
               <span className="font-bold font-headline sm:inline-block">
                 Innovent
               </span>
-              <span className="text-xs text-muted-foreground hidden sm:inline-block">
+              <span className="text-xs text-muted-foreground">
                 A Dabral Enterprises Product
               </span>
             </div>

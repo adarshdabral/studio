@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/shared/header';
 import { AuthProvider } from '@/context/auth-context';
+import Footer from '@/components/shared/footer';
 
 export const metadata: Metadata = {
   title: 'Innovent - Campus Event Hub',
@@ -25,6 +26,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           <main className="flex-grow">{children}</main>
+          <Footer />
           <Toaster />
         </AuthProvider>
       </body>
