@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -34,10 +35,10 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
-        <Link href="/" className="mr-6 flex items-center p-2 rounded-full bg-gradient-to-br from-primary via-accent to-secondary">
+        <Link href="/" className="mr-6 flex items-center p-0.5 rounded-full bg-gradient-to-br from-primary via-accent to-secondary">
           <div className="flex items-center justify-center bg-background p-2 rounded-full">
-            <Rocket className="h-6 w-6 text-primary mr-2" />
-            <div className="flex flex-col text-center">
+            <Rocket className="h-6 w-6 text-primary" />
+            <div className="flex flex-col text-center ml-2">
               <span className="font-bold font-headline sm:inline-block">
                 Innovent
               </span>
