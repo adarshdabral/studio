@@ -39,7 +39,7 @@ export default function Header() {
           <div className="flex items-center justify-center bg-background p-2 rounded-full">
             <Rocket className="h-6 w-6 text-primary" />
             <div className="flex flex-col text-center ml-2">
-              <span className="font-bold font-headline sm:inline-block">
+              <span className="font-bold font-headline">
                 Innovent
               </span>
               <span className="text-xs text-muted-foreground">
